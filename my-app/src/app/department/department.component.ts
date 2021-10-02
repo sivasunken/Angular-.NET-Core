@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { environment } from 'src/environments/environment';
+import { EventService } from '../services/event.service';
 
 @Component({
   selector: 'app-department',
@@ -8,8 +9,14 @@ import { environment } from 'src/environments/environment';
   styleUrls: ['./department.component.css'],
 })
 export class DepartmentComponent implements OnInit {
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private eventService: EventService) {
+    eventService.dbSourceChanged$.subscribe((data) => {
+      this.dbSource = data;
+      this.refreshList();
+    });
+  }
 
+  dbSource = 'mssql';
   departments: any = [];
 
   modalTitle = '';
@@ -25,10 +32,12 @@ export class DepartmentComponent implements OnInit {
   }
 
   refreshList() {
-    this.http.get<any>(environment.API_URL + 'department').subscribe((data) => {
-      this.departments = data;
-      this.departmentsWithoutFilter = data;
-    });
+    this.http
+      .get<any>(environment.API_URL + this.dbSource + '/department')
+      .subscribe((data) => {
+        this.departments = data;
+        this.departmentsWithoutFilter = data;
+      });
   }
 
   addClick() {
@@ -47,7 +56,7 @@ export class DepartmentComponent implements OnInit {
     const body = { DepartmentName: this.DepartmentName };
 
     this.http
-      .post(environment.API_URL + 'department', body)
+      .post(environment.API_URL + this.dbSource + '/department', body)
       .subscribe((res) => {
         alert(res.toString());
         this.refreshList();
@@ -60,16 +69,18 @@ export class DepartmentComponent implements OnInit {
       DepartmentName: this.DepartmentName,
     };
 
-    this.http.put(environment.API_URL + 'department', body).subscribe((res) => {
-      alert(res.toString());
-      this.refreshList();
-    });
+    this.http
+      .put(environment.API_URL + this.dbSource + '/department', body)
+      .subscribe((res) => {
+        alert(res.toString());
+        this.refreshList();
+      });
   }
 
   deleteClick(id: number) {
     if (confirm('Are you sure?')) {
       this.http
-        .delete(environment.API_URL + 'department/' + id)
+        .delete(environment.API_URL + this.dbSource + '/department/' + id)
         .subscribe((res) => {
           alert(res.toString());
           this.refreshList();

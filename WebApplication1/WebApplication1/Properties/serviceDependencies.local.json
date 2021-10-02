@@ -4,9 +4,8 @@
       "type": "secrets.user"
     },
     "mssql1": {
-      "resourceId": null,
       "type": "mssql.onprem",
-      "connectionId": "ConnectionStrings:EmployeeAppCon",
+      "connectionId": "ConnectionStrings:MsSqlCon",
       "secretStore": "LocalSecretsFile"
     }
   }

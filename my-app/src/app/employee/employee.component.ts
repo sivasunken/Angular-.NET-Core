@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { environment } from 'src/environments/environment';
+import { EventService } from '../services/event.service';
 
 @Component({
   selector: 'app-employee',
@@ -8,8 +9,14 @@ import { environment } from 'src/environments/environment';
   styleUrls: ['./employee.component.css'],
 })
 export class EmployeeComponent implements OnInit {
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private eventService: EventService) {
+    eventService.dbSourceChanged$.subscribe((data) => {
+      this.dbSource = data;
+      this.refreshList();
+    });
+  }
 
+  dbSource = 'mssql';
   employees: any = [];
   departments: any = [];
 
@@ -26,13 +33,17 @@ export class EmployeeComponent implements OnInit {
   }
 
   refreshList() {
-    this.http.get<any>(environment.API_URL + 'employee').subscribe((data) => {
-      this.employees = data;
-    });
+    this.http
+      .get<any>(environment.API_URL + this.dbSource + '/employee')
+      .subscribe((data) => {
+        this.employees = data;
+      });
 
-    this.http.get<any>(environment.API_URL + 'department').subscribe((data) => {
-      this.departments = data;
-    });
+    this.http
+      .get<any>(environment.API_URL + this.dbSource + '/department')
+      .subscribe((data) => {
+        this.departments = data;
+      });
   }
 
   addClick() {
@@ -67,10 +78,12 @@ export class EmployeeComponent implements OnInit {
       PhotoFileName: this.PhotoFileName,
     };
 
-    this.http.post(environment.API_URL + 'employee', body).subscribe((res) => {
-      alert(res.toString());
-      this.refreshList();
-    });
+    this.http
+      .post(environment.API_URL + this.dbSource + '/employee', body)
+      .subscribe((res) => {
+        alert(res.toString());
+        this.refreshList();
+      });
   }
 
   updateClick() {
@@ -82,16 +95,18 @@ export class EmployeeComponent implements OnInit {
       PhotoFileName: this.PhotoFileName,
     };
 
-    this.http.put(environment.API_URL + 'employee', body).subscribe((res) => {
-      alert(res.toString());
-      this.refreshList();
-    });
+    this.http
+      .put(environment.API_URL + this.dbSource + '/employee', body)
+      .subscribe((res) => {
+        alert(res.toString());
+        this.refreshList();
+      });
   }
 
   deleteClick(id: number) {
     if (confirm('Are you sure?')) {
       this.http
-        .delete(environment.API_URL + 'employee/' + id)
+        .delete(environment.API_URL + this.dbSource + '/employee/' + id)
         .subscribe((res) => {
           alert(res.toString());
           this.refreshList();
@@ -105,7 +120,10 @@ export class EmployeeComponent implements OnInit {
     formData.append('file', file, file.name);
 
     this.http
-      .post(environment.API_URL + 'employee/SaveFile', formData)
+      .post(
+        environment.API_URL + this.dbSource + '/employee/SaveFile',
+        formData
+      )
       .subscribe((data) => {
         this.PhotoFileName = data.toString();
       });

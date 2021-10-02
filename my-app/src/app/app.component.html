@@ -1,7 +1,7 @@
 <div class="container">
   <h3 class="d-flex justify-content-center">Angular 12 Front End</h3>
   <nav class="navbar navbar-expand-sm bg-light navbar-dark">
-    <ul class="navbar-nav">
+    <ul class="navbar-nav me-auto">
       <li class="nav-item">
         <button
           routerLink="home"
@@ -30,6 +30,16 @@
         </button>
       </li>
     </ul>
+    <div class="d-flex">
+      <div class="input-group mb-3">
+        <span class="input-group-text">Database Source</span>
+        <select class="form-select" [ngModel]="DbSource" (ngModelChange)="onChange($event)">
+          <option *ngFor="let src of sources">
+            {{ src }}
+          </option>
+        </select>
+      </div>
+    </div>
   </nav>
   <router-outlet></router-outlet>
 </div>

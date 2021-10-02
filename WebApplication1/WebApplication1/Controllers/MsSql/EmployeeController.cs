@@ -2,34 +2,42 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
-using WebApplication1.Models;
+using WebApplication1.Models.MsSql;
 
-namespace WebApplication1.Controllers
+namespace WebApplication1.Controllers.MsSql
 {
-    [Route("api/[controller]")]
+    [Route("api/mssql/[controller]")]
     [ApiController]
-    public class DepartmentController : ControllerBase
+    public class EmployeeController : ControllerBase
     {
         private readonly IConfiguration _configuration;
 
-        public DepartmentController(IConfiguration configuration)
+
+
+        private readonly IWebHostEnvironment _env;
+
+        public EmployeeController(IConfiguration configuration, IWebHostEnvironment env)
         {
             _configuration = configuration;
+            _env = env;
         }
 
         [HttpGet]
         public JsonResult Get()
         {
             string query = @"
-                            select DepartmentId, DepartmentName 
-                            from dbo.Department
+                            select EmployeeId, EmployeeName, Department,
+                            convert(varchar(10),DateOfJoining,120) as DateOfJoining, PhotoFileName
+                            from dbo.Employee
                             ";
 
             DataTable table = new DataTable();
@@ -38,7 +46,7 @@ namespace WebApplication1.Controllers
             using (SqlConnection sqlConnection = new SqlConnection(sqlDataSource))
             {
                 sqlConnection.Open();
-                using(SqlCommand command=new SqlCommand(query, sqlConnection))
+                using (SqlCommand command = new SqlCommand(query, sqlConnection))
                 {
                     sqlDataReader = command.ExecuteReader();
                     table.Load(sqlDataReader);
@@ -51,11 +59,12 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost]
-        public JsonResult Post(Department department)
+        public JsonResult Post(Employee employee)
         {
             string query = @"
-                            insert into dbo.Department
-                            values(@DepartmentName)
+                            insert into dbo.Employee
+                            (EmployeeName, Department,DateOfJoining,PhotoFileName)
+                            values(@EmployeeName, @Department,@DateOfJoining,@PhotoFileName)
                             ";
 
             DataTable table = new DataTable();
@@ -66,7 +75,10 @@ namespace WebApplication1.Controllers
                 sqlConnection.Open();
                 using (SqlCommand command = new SqlCommand(query, sqlConnection))
                 {
-                    command.Parameters.AddWithValue("@DepartmentName", department.DepartmentName);
+                    command.Parameters.AddWithValue("@EmployeeName", employee.EmployeeName);
+                    command.Parameters.AddWithValue("@Department", employee.Department);
+                    command.Parameters.AddWithValue("@DateOfJoining", employee.DateOfJoining);
+                    command.Parameters.AddWithValue("@PhotoFileName", employee.PhotoFileName);
                     sqlDataReader = command.ExecuteReader();
                     table.Load(sqlDataReader);
                     sqlDataReader.Close();
@@ -78,12 +90,15 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut]
-        public JsonResult Put(Department department)
+        public JsonResult Put(Employee employee)
         {
             string query = @"
-                            update dbo.Department
-                            set DepartmentName = @DepartmentName
-                            where DepartmentId = @DepartmentId
+                            update dbo.Employee
+                            set EmployeeName=@EmployeeName, 
+                                Department=@Department,
+                                DateOfJoining=@DateOfJoining,
+                                PhotoFileName=@PhotoFileName
+                            where EmployeeId = @EmployeeId
                             ";
 
             DataTable table = new DataTable();
@@ -94,8 +109,11 @@ namespace WebApplication1.Controllers
                 sqlConnection.Open();
                 using (SqlCommand command = new SqlCommand(query, sqlConnection))
                 {
-                    command.Parameters.AddWithValue("@DepartmentName", department.DepartmentName);
-                    command.Parameters.AddWithValue("@DepartmentId", department.DepartmentId);
+                    command.Parameters.AddWithValue("@EmployeeId", employee.EmployeeId);
+                    command.Parameters.AddWithValue("@EmployeeName", employee.EmployeeName);
+                    command.Parameters.AddWithValue("@Department", employee.Department);
+                    command.Parameters.AddWithValue("@DateOfJoining", employee.DateOfJoining);
+                    command.Parameters.AddWithValue("@PhotoFileName", employee.PhotoFileName);
                     sqlDataReader = command.ExecuteReader();
                     table.Load(sqlDataReader);
                     sqlDataReader.Close();
@@ -110,8 +128,8 @@ namespace WebApplication1.Controllers
         public JsonResult Delete(int id)
         {
             string query = @"
-                            delete from dbo.Department
-                            where DepartmentId = @DepartmentId
+                            delete from dbo.Employee
+                            where EmployeeId = @EmployeeId
                             ";
 
             DataTable table = new DataTable();
@@ -122,7 +140,7 @@ namespace WebApplication1.Controllers
                 sqlConnection.Open();
                 using (SqlCommand command = new SqlCommand(query, sqlConnection))
                 {
-                    command.Parameters.AddWithValue("@DepartmentId", id);
+                    command.Parameters.AddWithValue("@EmployeeId", id);
                     sqlDataReader = command.ExecuteReader();
                     table.Load(sqlDataReader);
                     sqlDataReader.Close();
@@ -131,6 +149,30 @@ namespace WebApplication1.Controllers
             }
 
             return new JsonResult("Deleted Successfully");
+        }
+
+        [Route("SaveFile")]
+        [HttpPost]
+        public JsonResult SaveFile()
+        {
+            try
+            {
+                var httpRequest = Request.Form;
+                var postedFile = httpRequest.Files[0];
+                string filename = postedFile.FileName;
+                var physicalPath = _env.ContentRootPath + "/Photos/" + filename;
+
+                using (var stream = new FileStream(physicalPath, FileMode.Create))
+                {
+                    postedFile.CopyTo(stream);
+                }
+
+                return new JsonResult(filename);
+            }
+            catch (Exception)
+            {
+                return new JsonResult("anonymous.png");
+            }
         }
     }
 }
