@@ -11,11 +11,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
-using WebApplication1.Models.MsSql;
+using WebApplication1.Models.Mongo;
 
-namespace WebApplication1.Controllers.MsSql
+namespace WebApplication1.Controllers.Mongo
 {
-    [Route("api/mssql/[controller]")]
+    [Route("api/mongo/[controller]")]
     [ApiController]
     public class EmployeeController : ControllerBase
     {
